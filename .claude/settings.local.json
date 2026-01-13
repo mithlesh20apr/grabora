@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(grep:*)",
+      "Bash(for file in src/app/seller/{orders,inventory,payments,kyc}/page.tsx)",
+      "Bash(npx tsc:*)",
+      "Bash(npx:*)",
+      "Bash(node -c:*)",
+      "Bash(xargs -I {} sh -c 'echo \"\"=== {} ===\"\" && grep -A2 \"\"return <PageLoader\"\" {} | head -5')"
+    ]
+  }
+}
