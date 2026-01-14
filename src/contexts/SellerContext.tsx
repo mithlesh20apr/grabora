@@ -626,6 +626,7 @@ interface SellerContextType {
   kycDocuments: KYCDocument[];
   
   // Auth actions
+  apiCall: (endpoint: string, options?: RequestInit, isFormData?: boolean) => Promise<Response>;
   register: (data: RegisterData) => Promise<ApiResult>;
   login: (email: string, password: string) => Promise<ApiResult>;
   logout: () => Promise<void>;
@@ -751,15 +752,28 @@ export function SellerProvider({ children }: { children: React.ReactNode }) {
     if (response.status === 401) {
       const result = await response.clone().json();
       if (result.message === 'Token expired' || result.message === 'Invalid token' || result.message === 'Unauthorized') {
-        // Clear session and redirect to login
-        sessionStorage.removeItem('sellerToken');
-        sessionStorage.removeItem('sellerRefreshToken');
-        sessionStorage.removeItem('seller');
-        setSeller(null);
-        setAccessToken(null);
-        setRefreshTokenValue(null);
-        router.push('/seller/login');
-        return response;
+        // Try to refresh token
+        const refreshed = await refreshToken();
+        if (refreshed) {
+          // Retry original request with new token
+          const newToken = sessionStorage.getItem('sellerToken');
+          if (newToken) headers['Authorization'] = `Bearer ${newToken}`;
+          const retryResponse = await fetch(`${SELLER_API_URL}${endpoint}`, {
+            ...options,
+            headers,
+          });
+          return retryResponse;
+        } else {
+          // Clear session and redirect to login
+          sessionStorage.removeItem('sellerToken');
+          sessionStorage.removeItem('sellerRefreshToken');
+          sessionStorage.removeItem('seller');
+          setSeller(null);
+          setAccessToken(null);
+          setRefreshTokenValue(null);
+          router.push('/seller/login');
+          return response;
+        }
       }
     }
 
@@ -1563,6 +1577,7 @@ export function SellerProvider({ children }: { children: React.ReactNode }) {
         getSettlements,
         getSettlement,
         getEarningsSummary,
+        apiCall,
       }}
     >
       {children}

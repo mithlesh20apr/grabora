@@ -48,6 +48,12 @@ interface Product {
   totalOrders?: number;
   inStock?: boolean;
   availableStock?: number;
+  // Seller-related fields from backend
+  isNearbySeller?: boolean;
+  deliveryEta?: string;
+  sellerScore?: number;
+  sellerIsBoosted?: boolean;
+  sellerBadges?: string[];
 }
 
 interface ProductCardProps {
@@ -182,10 +188,26 @@ export default function ProductCard({ product }: ProductCardProps) {
     router.push(`/products/${productSlug}`);
   };
 
+  // Seller UI helpers
+  const isNearbySeller = product.isNearbySeller;
+  const deliveryEta = product.deliveryEta;
+  const sellerBadges = Array.isArray(product.sellerBadges) ? product.sellerBadges : [];
+  const sellerIsBoosted = !!product.sellerIsBoosted;
+
+  // Badge icons
+  const BADGE_ICONS: Record<string, JSX.Element> = {
+    TOP_RATED: (
+      <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-[10px] font-bold mr-1">Top Rated</span>
+    ),
+    BOOSTED: (
+      <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold mr-1">Boosted</span>
+    ),
+  };
+
   return (
     <div
       onClick={handleProductClick}
-      className="cursor-pointer group bg-white rounded-xl md:rounded-2xl shadow-md md:shadow-lg hover:shadow-[0_20px_60px_rgba(24,73,121,0.25)] transition-all duration-500 overflow-hidden border border-gray-100 hover:border-[#f26322] transform hover:-translate-y-2 relative block"
+      className={`cursor-pointer group bg-white rounded-xl md:rounded-2xl shadow-md md:shadow-lg hover:shadow-[0_20px_60px_rgba(24,73,121,0.25)] transition-all duration-500 overflow-hidden border ${sellerIsBoosted ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100 hover:border-[#f26322]'} transform hover:-translate-y-2 relative block`}
     >
       {/* Toast Notification */}
       {showAddedToast && (
@@ -200,6 +222,25 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="absolute inset-0 bg-gradient-to-br from-[#184979]/0 to-[#f26322]/0 group-hover:from-[#184979]/5 group-hover:to-[#f26322]/5 transition-all duration-500 pointer-events-none rounded-2xl"></div>
       {/* Image Container */}
       <div className="relative w-full bg-gradient-to-br from-gray-100 to-gray-50 overflow-hidden" style={{ aspectRatio: '1 / 1' }}>
+        {/* Seller badges and tags */}
+        <div className="absolute top-2 left-2 z-30 flex flex-col gap-1 items-start">
+          {/* Nearby Seller tag */}
+          {isNearbySeller && (
+            <span className="bg-green-100 text-green-700 text-[10px] font-semibold px-2 py-0.5 rounded-full mb-0.5 shadow">Nearby Seller</span>
+          )}
+          {/* Seller badges */}
+          {sellerBadges.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {sellerBadges.map((badge) => (
+                <span key={badge}>{BADGE_ICONS[badge] || <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold mr-1">{badge}</span>}</span>
+              ))}
+            </div>
+          )}
+          {/* Sponsored/Boosted indicator */}
+          {sellerIsBoosted && (
+            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-300 shadow">Sponsored</span>
+          )}
+        </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10"></div>
         <Image
           src={productImage}
@@ -209,6 +250,15 @@ export default function ProductCard({ product }: ProductCardProps) {
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           priority={false}
         />
+        {/* Delivery ETA */}
+        {deliveryEta && (
+          <div className="absolute bottom-2 left-2 bg-white/90 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded shadow z-30 flex items-center gap-1">
+            <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            {deliveryEta}
+          </div>
+        )}
         
         {/* Discount Badge */}
         {discountPercent > 0 && (

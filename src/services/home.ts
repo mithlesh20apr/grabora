@@ -15,10 +15,19 @@ export interface HomeData {
 export interface NearbySeller {
   sellerId: string;
   storeName: string;
-  storeLogo: string;
-  avgRating: number;
-  totalOrders: number;
-  deliveryEta: string;
+  storeLogo?: string;
+  avgRating?: number;
+  totalOrders?: number;
+  deliveryEta?: string;
+  isOpen?: boolean;
+  nextOpenAt?: string | null;
+  deliveryFee?: number;
+  minOrderValue?: number;
+  freeDeliveryAbove?: number;
+  distanceKm?: number;
+  badges?: string[];
+  score?: number;
+  isBoosted?: boolean;
 }
 
 export interface HighDemandProduct {

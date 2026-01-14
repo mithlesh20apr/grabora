@@ -1,4 +1,3 @@
-
 'use client';
 import OnboardingCard from '@/components/seller/OnboardingCard';
 
@@ -36,7 +35,7 @@ interface Badge {
 
 export default function SellerDashboardPage() {
   const router = useRouter();
-  const { seller, isAuthenticated, isLoading: authLoading, isApproved, logout, getDashboard } = useSeller();
+  const { seller, isAuthenticated, isLoading: authLoading, isApproved, logout, getDashboard, apiCall } = useSeller();
   // Onboarding status hook at top level (fixes Rules of Hooks)
   const { status: onboardingStatus, loading: onboardingLoading, error: onboardingError } = useSellerOnboardingStatus();
   // Activation status for top banner
@@ -48,6 +47,28 @@ export default function SellerDashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Boost status state
+  const [boostStatus, setBoostStatus] = useState<{ isActive: boolean; expiryDate?: string } | null>(null);
+  // Fetch boost status when authenticated
+  useEffect(() => {
+    const fetchBoostStatus = async () => {
+      if (isAuthenticated && isApproved) {
+        try {
+          const res = await apiCall('/boost', { method: 'GET' });
+          const result = await res.json();
+          if (result.success && result.data) {
+            setBoostStatus(result.data);
+          } else {
+            setBoostStatus({ isActive: false });
+          }
+        } catch (err) {
+          setBoostStatus({ isActive: false });
+        }
+      }
+    };
+    fetchBoostStatus();
+  }, [isAuthenticated, isApproved, apiCall]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -268,19 +289,31 @@ export default function SellerDashboardPage() {
 
                       {/* Top Bar */}
                       <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 ml-0 lg:ml-0">
-                        <div>
-                          <h1 className="text-2xl font-bold text-white mb-1">Dashboard</h1>
-                          <p className="text-sm text-gray-400">Welcome back, {seller?.name}!</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {badges.slice(0, 2).map((badge, index) => (
-                            <div key={index} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 rounded-full border border-amber-500/30">
-                              <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        <div className="flex flex-col sm:flex-row items-center justify-between w-full">
+                          <div>
+                            <h1 className="text-2xl font-bold text-white mb-1">Dashboard</h1>
+                            <p className="text-sm text-gray-400">Welcome back, {seller?.name}!</p>
+                          </div>
+                          <div className="flex items-center gap-3 ml-auto">
+                            <Link
+                              href="/seller/boost"
+                              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#f26322] to-[#ff7a45] text-white font-bold rounded-xl shadow-lg shadow-[#f26322]/30 border-2 border-[#f26322] hover:scale-105 hover:shadow-xl transition-all text-base"
+                              style={{ boxShadow: '0 0 16px 2px #f26322a0' }}
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
-                              <span className="text-xs font-medium text-amber-400">{badge.name}</span>
-                            </div>
-                          ))}
+                              Boost Your Store
+                            </Link>
+                            {badges.slice(0, 2).map((badge, index) => (
+                              <div key={index} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 rounded-full border border-amber-500/30">
+                                <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                <span className="text-xs font-medium text-amber-400">{badge.name}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </header>
 
@@ -379,6 +412,38 @@ export default function SellerDashboardPage() {
                           </div>
                         </div>
 
+                      {/* Boost Your Store Card - improved professional look and visibility */}
+                      <div className="w-full mb-6">
+                        <div className="bg-gradient-to-r from-[#f26322] to-[#ff7a45] rounded-3xl border-0 p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-8 shadow-2xl" style={{ boxShadow: '0 8px 32px 0 #f26322a0' }}>
+                          <div className="flex items-center gap-6">
+                            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h3 className="text-3xl font-extrabold text-white mb-2 tracking-tight drop-shadow-lg">Boost Your Store <span className="align-middle">🚀</span></h3>
+                              <p className="text-lg text-white font-medium drop-shadow-sm">Increase your ranking, get more visibility, and attract more buyers with paid boost plans.<br/><span className="text-white font-bold">Enjoy <span className="text-[#fff] bg-[#ff7a45] px-2 py-1 rounded">priority listing</span> and <span className="text-[#fff] bg-[#f26322] px-2 py-1 rounded">exclusive features</span>!</span></p>
+                              <p className="text-base text-white mt-3 font-bold">Current Status: <span className="text-[#fff]">{boostStatus?.isActive ? `Active (expires ${boostStatus?.expiryDate})` : 'Not Boosted'}</span></p>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-3 items-end">
+                            <Link
+                              href="/seller/boost"
+                              className="px-8 py-3 bg-white text-[#f26322] font-bold rounded-xl shadow-lg border-0 hover:bg-[#f26322] hover:text-white hover:scale-105 transition-all text-lg drop-shadow-lg"
+                              style={{ boxShadow: '0 0 16px 2px #fff8' }}
+                            >
+                              View Boost Plans
+                            </Link>
+                            {boostStatus?.isActive && (
+                              <button className="px-8 py-3 border-0 bg-[#fff2] text-white font-bold rounded-xl hover:bg-white/10 transition-all drop-shadow-lg">
+                                Renew Boost
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Main Content Grid */}
                         <div className="grid lg:grid-cols-3 gap-6">
                           {/* Orders Overview */}
@@ -454,8 +519,8 @@ export default function SellerDashboardPage() {
 
                           {/* Quick Actions */}
                           <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
-                            <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
-                            <div className="space-y-3">
+                              <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
+                              <div className="space-y-3">
                               <Link
                                 href="/seller/products/add"
                                 className="flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-all group"
